@@ -171,8 +171,6 @@ XC = [X zeros(2,2); zeros(2,2) eye(2)]
 % end
 % nCW
 % 
-% for i = 1:2^nC-1
-% 	dec2bin(bin2gray(i),3)
-% end
+% 
 
 

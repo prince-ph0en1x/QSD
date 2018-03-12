@@ -10,7 +10,8 @@ function [Phd,Rza,Ryt,Rzb] = zyz(U)
     beta = log(-A*C/(B*D))/2;
     theta = 2*atan(B*exp(beta)/A);  % +/- n*pi
     delta = (log(A*D)-log(cos(theta/2)^2))/(2*1i);
-    
+    % delta = log(det(U))/1i
+	
     Phd = [exp(1i*delta) 0; 0 exp(1i*delta)];
     Rza = [exp(1i*alpha/2) 0; 0 exp(-1i*alpha/2)];
     Ryt = [cos(theta/2) sin(theta/2); -sin(theta/2) cos(theta/2)];
