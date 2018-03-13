@@ -11,17 +11,16 @@ CX = [1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0];
 Tf = [eye(6,6) zeros(6,2); zeros(2,6) X];
 H = 1/sqrt(2)*[1 1;1 -1];
 CIX = kron(CX,eye(2)) * kron(kron(H,H),eye(2)) * kron(CX,eye(2)) * kron(kron(H,H),eye(2)) * kron(CX,eye(2)) * kron(eye(2),CX) * kron(CX,eye(2)) * kron(kron(H,H),eye(2)) * kron(CX,eye(2)) * kron(kron(H,H),eye(2)) * kron(CX,eye(2));
-XC = [X zeros(2,2); zeros(2,2) eye(2)]
+% XC = [X zeros(2,2); zeros(2,2) eye(2)];
 
 %% Theorem 1 -- ZYZ Decomposition
 
-% 	U = randUM(1)
+	U = randUM(1)
+% 	U = [0.0000 - 0.7071i   0.7071 + 0.0000i;   0.7071 + 0.0000i   0.0000 - 0.7071i]
 % 	det(U)
-% 	[Phd,Rza,Ryt,Rzb] = zyz(U);
-% 	% decomposed = Phd*Rza*Ryt*Rzb	% doesn't work if det(U) = -1 e.g. U = [0.8919 0.4523; 0.4523 -0.8919],X,CX,Tf,H 
-% 	decomposed = Rzb*Ryt*Rza			% works for special Unitary Matrices, i.e. with det(U) = 1
-% 	%U*inv(Rza)*inv(Ryt)*inv(Rzb)
-% 	%Phd
+% 	U*U'
+	[delta,alpha,theta,beta] = zyz(U);
+	decomposedU = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta)
     
 %% Theorem 4 -- Demultiplexing A Singly Multiplexed Ry or Rz
 
