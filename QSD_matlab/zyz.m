@@ -1,11 +1,9 @@
-%function [Phd,Rza,Ryt,Rzb] = zyz(U)
 function [delta,alpha,theta,beta] = zyz(U)
 	
    	%% Qubiter Method
 	
-	delta = atan(imag(det(U))/real(det(U)))/size(U,1);
+	delta = atan2(imag(det(U)),real(det(U)))/size(U,1);
 	SU = U/exp(1i*delta);
-% 	det(SU)
 	A = SU(1,1);
     B = SU(1,2);	
 	cw = real(A);
@@ -16,14 +14,14 @@ function [delta,alpha,theta,beta] = zyz(U)
 	wx = wx/sw;
 	wy = wy/sw;
 	wz = wz/sw;
-	t1 = atan(wz*sw/cw);
-	t2 = atan(wx/wy);
+	t1 = atan2(wz*sw,cw);
+	t2 = atan2(wx,wy);
 	alpha = t1 + t2;
 	beta = t1 - t2;
-	theta = 2*atan(sw*sqrt(wx^2 + wy^2)/sqrt(cw^2 + (wz*sw)^2));
+	theta = 2*atan2(sw*sqrt(wx^2 + wy^2),sqrt(cw^2 + (wz*sw)^2));
 		
 	%% My calculations
-	
+% 	
 % 	A = SU(1,1);
 % 	B = SU(1,2);
 % 	C = SU(2,1);
@@ -35,11 +33,11 @@ function [delta,alpha,theta,beta] = zyz(U)
 % 	% delta = log(det(U))/1i
 	
 	%% Tests
-	
-    Phd = AP(delta);
-	Rza = Rz(alpha);
-	Ryt = Ry(theta);
-	Rzb = Rz(beta);
-	decomposedSU = Rza*Ryt*Rzb;
+% 	
+%	Phd = AP(delta);
+% 	Rza = Rz(alpha);
+% 	Ryt = Ry(theta);
+% 	Rzb = Rz(beta);
+% 	decomposedSU = Phd*Rza*Ryt*Rzb;
 	
 end

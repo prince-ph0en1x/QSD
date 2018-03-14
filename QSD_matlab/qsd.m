@@ -16,9 +16,6 @@ CIX = kron(CX,eye(2)) * kron(kron(H,H),eye(2)) * kron(CX,eye(2)) * kron(kron(H,H
 %% Theorem 1 -- ZYZ Decomposition
 
 	U = randUM(1)
-% 	U = [0.0000 - 0.7071i   0.7071 + 0.0000i;   0.7071 + 0.0000i   0.0000 - 0.7071i]
-% 	det(U)
-% 	U*U'
 	[delta,alpha,theta,beta] = zyz(U);
 	decomposedU = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta)
     
