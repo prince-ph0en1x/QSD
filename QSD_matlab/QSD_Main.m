@@ -32,37 +32,49 @@ function Ud = QSD_Main(U,prnt)
 	D = sqrtm(d);
 	W = D*V'*U2;
 	decomposedAB1 = [V OU; OU V]*[D OU; OU D']*[W OU; OU W];
-	
+
 	if (size(V,1) == 2)
 		if (isequal(V,I))
 			decomposedV = I;
-			if (prnt == 1) disp(sprintf('\t\tDecompose V1 at Level %d: I',dim)); end
+			if (prnt == 1) disp(sprintf('\tDecompose V1 at Level %d:\t I',dim)); end
 		else
 			[delta,alpha,theta,beta] = zyz(V);
 			decomposedV = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-			if (prnt == 1) disp(sprintf('\t\tDecompose V1 (using ZYZ) at Level %d: I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,delta,alpha,theta,beta)); end
+			if (prnt == 1) disp(sprintf('\tDecompose V1 (using ZYZ) at Level %d:\t I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,delta,alpha,theta,beta)); end
 		end
-
-		K0 = diag([D(1,1),D(1,1)']);
-		K1 = diag([D(2,2),D(2,2)']);
-		[~,alpha0,~,beta0] = zyz(K0);
-		[~,alpha1,~,beta1] = zyz(K1);
-		ab = [alpha0+beta0; alpha1+beta1];
-		Minv = inv(genMk(1));
-		ar = Minv*ab;
-		decomposedD = kron(Rz(ar(1)),I) * XC * kron(Rz(ar(2)),I) * XC;
-		if (prnt == 1) disp(sprintf('\t\tDecompose D1 (using ZYZ) at Level %d: Rz(%f,_)-I * XC(_,_) * Rz(%f,_)-I',dim,ar(1),ar(2))); end		
-
-		[delta,alpha,theta,beta] = zyz(W);
-		decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-		if (prnt == 1) disp(sprintf('\t\tDecompose W1 (using ZYZ) at Level %d: I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)\n',dim,delta,alpha,theta,beta)); end
-			
-		decomposedAB1 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);		
 	else
-		QSD_Main(V,prnt);
-		QSD_Main(D,prnt);
-		QSD_Main(W,prnt);
+		decomposedV = QSD_Main(V,prnt);
+	end
+	
+	ab = 2*log(diag(D))/1i;
+	Minv = inv(genMk(dim-1));
+	ar = Minv*ab;
+	dd = eye(size(AB1,1));
+	for i = 1:size(D,1)
+		if (i == size(D,1))
+			posc = dim-2;
+		else
+			posc = dim-2 - (strfind(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1) - 1);
+		end		
+		dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
+		if (prnt == 1) disp(sprintf('\tDecompose D1 (using Grey) at Level %d:\t CX(%d,%d) * I-Rz(%f,_)\n',dim,posc,dim-1,ar(i))); end
+	end
+	decomposedD = dd;	
+	
+	if (size(W,1) == 2)
+		if (isequal(W,I))
+			decomposedW = I;
+			if (prnt == 1) disp(sprintf('\tDecompose W1 at Level %d:\t I',dim)); end
+		else
+			[delta,alpha,theta,beta] = zyz(W);
+			decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
+			if (prnt == 1) disp(sprintf('\tDecompose W1 (using ZYZ) at Level %d:\t I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)\n',dim,delta,alpha,theta,beta)); end
+		end
+	else
+		decomposedW = QSD_Main(W,prnt);
 	end    
+	
+	decomposedAB1 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);
 
     %% Decompose CS to Ry, CX
 	
@@ -75,15 +87,15 @@ function Ud = QSD_Main(U,prnt)
 	dcs = eye(size(CS,1));
 	for i = 1:size(ss,1)
 		if (i == size(ss,1))
-			posc = 0;
+			posc = dim-2;
 		else
-			posc = strfind(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1) - 1;
+			posc = dim-2 - (strfind(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1) - 1);
 		end		
 		dcs = U_CX(posc,dim-1,dim) * kron([cos(tr(i)/2) sin(tr(i)/2); -sin(tr(i)/2) cos(tr(i)/2)],eye(2^(dim-1))) * dcs;
-		if (prnt == 1) disp(sprintf('\t\tDecompose CS (using Grey) at Level %d: CX(%d,%d) * I-Ry(%f,_)\n',dim,posc,dim-1,tr(i))); end
+		if (prnt == 1) disp(sprintf('\tDecompose CS (using Grey) at Level %d:\t CX(%d,%d) * I-Ry(%f,_)\n',dim,posc,dim-1,tr(i))); end
 	end
 	decomposedCS = dcs;
-   
+	
     %% Decompose AB2 to V, D, W (lower dimension)
     
 	AB2 = [R0 zeros(size(R0,1),size(R1,2)); zeros(size(R1,1),size(R0,2)) R1];
@@ -100,37 +112,49 @@ function Ud = QSD_Main(U,prnt)
 	if (size(V,1) == 2)
 		if (isequal(V,I))
 			decomposedV = I;
-			if (prnt == 1) disp(sprintf('\t\tDecompose V2 at Level %d: I',dim)); end
+			if (prnt == 1) disp(sprintf('\tDecompose V2 at Level %d:\t I',dim)); end
 		else
 			[delta,alpha,theta,beta] = zyz(V);
 			decomposedV = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-			if (prnt == 1) disp(sprintf('\t\tDecompose V2 (using ZYZ) at Level %d: I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,delta,alpha,theta,beta)); end
+			if (prnt == 1) disp(sprintf('\tDecompose V2 (using ZYZ) at Level %d:\t I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,delta,alpha,theta,beta)); end
 		end
-		
-		K0 = diag([D(1,1),D(1,1)']);
-		K1 = diag([D(2,2),D(2,2)']);
-		[~,alpha0,~,beta0] = zyz(K0);
-		[~,alpha1,~,beta1] = zyz(K1);
-		ab = [alpha0+beta0; alpha1+beta1];
-		Minv = inv(genMk(1));
-		ar = Minv*ab;
-		decomposedD = kron(Rz(ar(1)),I) * XC * kron(Rz(ar(2)),I) * XC;
-		if (prnt == 1) disp(sprintf('\t\tDecompose D2 (using ZYZ) at Level %d: Rz(%f,_)-I * XC(_,_) * Rz(%f,_)-I',dim,ar(1),ar(2))); end	
-
-		[delta,alpha,theta,beta] = zyz(W);
-		decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-		if (prnt == 1) disp(sprintf('\t\tDecompose W2 (using ZYZ) at Level %d: I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)\n',dim,delta,alpha,theta,beta)); end
-
-		decomposedAB2 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);
 	else
-		QSD_Main(V,prnt);
-		QSD_Main(D,prnt);
-		QSD_Main(W,prnt);
+		decomposedV = QSD_Main(V,prnt);
+	end
+	
+	ab = 2*log(diag(D))/1i;
+	Minv = inv(genMk(dim-1));
+	ar = Minv*ab;
+	dd = eye(size(AB2,1));
+	for i = 1:size(D,1)
+		if (i == size(D,1))
+			posc = dim-2;
+		else
+			posc = dim-2 - (strfind(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1) - 1);
+		end		
+		dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
+		if (prnt == 1) disp(sprintf('\tDecompose D2 (using Grey) at Level %d:\t CX(%d,%d) * I-Rz(%f,_)\n',dim,posc,dim-1,ar(i))); end
+	end
+	decomposedD = dd;
+	
+	if (size(W,1) == 2)
+		if (isequal(W,I))
+			decomposedW = I;
+			if (prnt == 1) disp(sprintf('\tDecompose W2 at Level %d:\t I',dim)); end
+		else
+			[delta,alpha,theta,beta] = zyz(W);
+			decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
+			if (prnt == 1) disp(sprintf('\tDecompose W2 (using ZYZ) at Level %d:\t I-Ph(%f) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)\n',dim,delta,alpha,theta,beta)); end
+		end
+	else
+		decomposedW = QSD_Main(W,prnt);
 	end    
+	
+	decomposedAB2 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);
 
 	%% Final Decomposition Testing
 	
 	% Ud = AB1*CS*AB2;
- 	Ud = decomposedAB1 * decomposedCS * decomposedAB2
+ 	Ud = decomposedAB1 * decomposedCS * decomposedAB2;
     
 end

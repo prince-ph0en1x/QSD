@@ -5,10 +5,10 @@ clc
 %% Generate Arbitrary Unitary for testing
 
 disp('Arbitrary Special Unitary Matrix to be decomposed')
-dim = 2;
+dim = 3;
 U = randUM(dim)
 if dim >= 2
-	Ud = QSD_Main(U,1);
+	Ud = QSD_Main(U,1)
 	maxerr = max(max(Ud-U))
 else
 	zyz(U)
