@@ -3,7 +3,7 @@ clear all
 clc
 
 %% Generating Binomial Oracle Unitary for testing QuAM with distributed queries
-
+% 
 % 	p = '000';		% String to search
 % 	q = 0.25;		% Smoothness factor (1 == Grover)
 % 	d = size(p,2);
@@ -14,7 +14,7 @@ clc
 % 		bp(i) = sqrt((q^h)*((1-q)^(d-h)));
 % 	end
 % 	Ph = diag([1 1 1 1 1 1 1 exp(1i*pi)]);		% To make det(BO) +1 from -1
-% 	BO = eye(N)-2*bp'*bp;
+% 	BO = eye(N)-2*bp'*bp
 % 
 % 	% surf(real(BO))
 % 	% BOD = QSD_Main(BO);
@@ -47,10 +47,23 @@ clc
 % 	axis([0 N-1 0 1])
 	
 %% QuAM Iteration 2 solution Modified Loop
-
+% 
 % % searching for 000 when memory has states from 010 to 111.
 % % quamdq successfully amplifies 010 and 100, as 000 and 001 is not there. Pmax is 0.61
 % % completing query fails to amplify if state not in memory
+% 
+% 	% Oracle
+% 	p = '000';		% String to search
+% 	q = 0.25;		% Smoothness factor (1 == Grover)
+% 	d = size(p,2);
+% 	N = 2^d;
+% 	bp = ones(1,N);
+% 	for i = 1:N
+% 		h = pdist([sprintf('%s',dec2bin(i-1,d));p],'hamming')*d;
+% 		bp(i) = sqrt((q^h)*((1-q)^(d-h)));
+% 	end
+% 	Ph = diag([1 1 1 1 1 1 1 exp(1i*pi)]);		% To make det(BO) +1 from -1
+% 	BO = eye(N)-2*bp'*bp;
 % 
 % 	% Initialization
 % 	n = N-2;		% Number of stored elements in associative memory
@@ -102,24 +115,28 @@ clc
 
 %% QuAMdq iteration
 
-% Continue till abs(<s|bp>) ~= 1
+	% Find how many iterations for max Psoln
+	% Continue till abs(<s|bp>) ~= 1
 
-bp = [4 2 2 1]/5;
-N = size(bp,2);
-BO = eye(N)-2*bp'*bp;
-plot([0:N-1],bp,'-.g')
-hold on
+	bp = [4 2 2 1]/5;		% Find nearest to '00'
+	N = size(bp,2);
+	BO = eye(N)-2*bp'*bp
+	BOD = QSD_Main(BO,1);
+	maxerr = max(max(BOD-BO))
+	plot([0:N-1],bp,'-.g')
+	hold on
 
-s = [ones(1,N)/sqrt(N)];
-plot([0:N-1],s.^2,'xb')
+	s = [ones(1,N)/sqrt(N)]
+	plot([0:N-1],s.^2,'xb')
 
-% beta0 = s*bp';
-% alpha0 = s(1);
-T = round(2*pi/(2*asin(sum(bp)/sqrt(N))));
-
-for i = 1:T
-	s = (BO*s')';					% Distributed Query
-	s = -s + 2*mean(s);				% Diffuse
-end
-plot([0:N-1],s.^2,'or')
-axis([0 N-1 0 1])	
+	% beta0 = s*bp';
+	% alpha0 = s(1);
+	T = round(2*pi/(2*asin(sum(bp)/sqrt(N))))
+	for i = 1:T
+		s = (BO*s')';					% Distributed Query
+		s = s - 2*mean(s);				% Diffuse
+		s.^2
+	end
+	
+	plot([0:N-1],s.^2,'or')
+	axis([0 N-1 0 1])	
