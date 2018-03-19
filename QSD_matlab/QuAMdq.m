@@ -121,21 +121,22 @@ clc
 	bp = [4 2 2 1]/5;		% Find nearest to '00'
 	N = size(bp,2);
 	BO = eye(N)-2*bp'*bp
-	BOD = QSD_Main(BO,1);
+%	BOD = QSD_Main(BO,1);
+	BOD = QSD_qasm(BO,1,[0:1])
 	maxerr = max(max(BOD-BO))
 	plot([0:N-1],bp,'-.g')
 	hold on
 
-	s = [ones(1,N)/sqrt(N)]
+	s = [ones(1,N)/sqrt(N)];
 	plot([0:N-1],s.^2,'xb')
 
 	% beta0 = s*bp';
 	% alpha0 = s(1);
-	T = round(2*pi/(2*asin(sum(bp)/sqrt(N))))
+	T = round(2*pi/(2*asin(sum(bp)/sqrt(N))));
 	for i = 1:T
 		s = (BO*s')';					% Distributed Query
 		s = s - 2*mean(s);				% Diffuse
-		s.^2
+		s.^2;
 	end
 	
 	plot([0:N-1],s.^2,'or')
