@@ -17,7 +17,7 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 	Tf = [I O O O; O I O O; O O I O; O O O X];		% QMUX of {I,I,I,X}
 
 	%% Decompose U to AB1, CS, AB2
-	if (prnt == 1) disp(sprintf('Decompose U using Fat CSD at Level %d\n\n',dim)); end
+%	if (prnt == 1) disp(sprintf('Decompose U using Fat CSD at Level %d\n\n',dim)); end
 	[L0,L1,cc,ss,R0,R1] = fatCSD(U);
 	
 	%% Decompose AB2 to V, D, W (lower dimension)
@@ -26,9 +26,12 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 
 	U1 = AB2(1:splitpt,1:splitpt);
 	U2 = AB2(splitpt+1:end,splitpt+1:end);
-
+		
 	if (max(max(abs(U1+U2))) < 1e-10 || max(max(abs(U1-U2))) < 1e-10)
 		% TBD: How this section behaves for dim > 2
+		if (dim > 2)
+			'oop'
+		end
 		[delta,alpha,theta,beta] = zyz(U1);
 		decomposedU1 = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
 		% disp(sprintf('=====>   Decompose U1 (using ZYZ) at Level %d',dim));
@@ -48,12 +51,26 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 		end
 	else
 %		[v,d,~] = eig(U1*U2');	% MATLAB
-		[v,d] = eig(U1,U2');	% OCTAVE
+		[v,d] = eig(complex(U1),complex(U2'));	% OCTAVE
+%		[v,d] = eig(U1,U2');	% OCTAVE
 		V = v;
 		D = sqrtm(d);
 		W = D*V'*U2;
 		decomposedAB2 = [V OU; OU V]*[D OU; OU D']*[W OU; OU W];
-		
+	
+	
+	
+	
+	if dim == 3
+		AB2
+		decomposedAB2
+		maxerr1 = max(max(AB2-decomposedAB2))
+	end		
+	
+	
+	
+	
+	
 		if (size(W,1) == 2)
 			if (isequal(W,I))
 				decomposedW = I;
@@ -61,7 +78,19 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			else
 				% disp(sprintf('=====>   Decompose W2 (using ZYZ) at Level %d',dim));
 				[delta,alpha,theta,beta] = zyz(W);
-				decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);			
+				decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);	
+		
+
+
+%				W
+%				det(W)
+%				W*W'
+%				decomposedW
+%				maxerrW2 = max(max(W-decomposedW))
+
+
+
+		
 				if (prnt == 1)
 					disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 					disp(sprintf('ry q%d,%f',qbsp(1),-theta));
@@ -70,8 +99,11 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 				end
 			end
 		else
-			decomposedW = QSD_Main(W,prnt);
-		end 		
+			decomposedW = QSD_qasm(W,prnt,qbsp(1:end-1));
+%			maxerrW3 = max(max(W-decomposedW))
+		end
+	
+		
 
 		ab = 2*log(diag(D))/1i;
 		Minv = inv(genMk(dim-1));
@@ -81,13 +113,15 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			if (i == size(D,1))
 				posc = dim-2;
 			else
-				posc = dim-2 - (strfind(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1) - 1);
-			end		
+				[~,idx] = find(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1);
+				posc = dim-2 - (idx - 1);
+%				posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1) 
+			end
 			dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
 			% disp(sprintf('=====>   Decompose D2 (using Grey) at Level %d',dim));				
 			if (prnt == 1)
 				disp(sprintf('rz q%d,%f',qbsp(2),-ar(i)));
-				disp(sprintf('cnot q%d,q%d',qbsp(1),qbsp(2)));
+				disp(sprintf('cnot q%d,q%d',posc,dim-1));
 			end
 		end
 		decomposedD = dd;
@@ -108,15 +142,19 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 				end
 			end
 		else
-			decomposedV = QSD_Main(V,prnt);
+			decomposedV = QSD_qasm(V,prnt,qbsp(1:end-1));
 		end
 		
 		decomposedAB2 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);
 	end
-	decomposedAB2;    
+	decomposedAB2; 
+
+%	if dim == 3
+%		maxerr1 = max(max(AB2-decomposedAB2))
+%	end
 
     %% Decompose CS to Ry, CX
-    disp(sprintf(''))
+    if (prnt == 1) disp(sprintf('')); end
 	
 	CS = [cc ss; -ss cc];
     % Property Test: cc^2 + ss^2 = eye(size(cc,1))
@@ -129,26 +167,31 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 		if (i == size(ss,1))
 			posc = dim-2;
 		else
-			posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1);
+			[~,idx] = find(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1);
+			posc = dim-2 - (idx - 1);
+%			posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1);
 		end		
 		dcs = U_CX(posc,dim-1,dim) * kron([cos(tr(i)/2) sin(tr(i)/2); -sin(tr(i)/2) cos(tr(i)/2)],eye(2^(dim-1))) * dcs;
 		% disp(sprintf('=====>   Decompose CS (using Grey) at Level %d',dim));				
 		if (prnt == 1)
 			disp(sprintf('ry q%d,%f',qbsp(2),-tr(i)));
-			disp(sprintf('cnot q%d,q%d',qbsp(1),qbsp(2)));
+			disp(sprintf('cnot q%d,q%d',posc,dim-1));
 		end
 	end
 	decomposedCS = dcs;
 	
     %% Decompose AB1 to V, D, W (lower dimension)
-    disp(sprintf(''))
- 
+    if (prnt == 1) disp(sprintf('')); end
+
 	AB1 = [L0 zeros(size(L0,1),size(L1,2)); zeros(size(L1,1),size(L0,2)) L1];
 
 	U1 = AB1(1:splitpt,1:splitpt);
 	U2 = AB1(splitpt+1:end,splitpt+1:end);
 	
 	if (max(max(abs(U1+U2))) < 1e-10 || max(max(abs(U1-U2))) < 1e-10)
+		if (dim > 2)
+			'oop'
+		end
 		[delta,alpha,theta,beta] = zyz(U1);
 		decomposedU1 = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
 		if(max(max(U1+U2)) < 1e-10)
@@ -183,10 +226,10 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 				end
 			end
 		else
-			decomposedW = QSD_Main(W,prnt);
+			decomposedW = QSD_qasm(W,prnt,qbsp(1:end-1));
 		end    
 		decomposedW;
-		
+
 		ab = 2*log(diag(D))/1i;
 		Minv = inv(genMk(dim-1));
 		ar = Minv*ab;
@@ -195,18 +238,19 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			if (i == size(D,1))
 				posc = dim-2;
 			else
-				posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1);
-			end		
+				[~,idx] = find(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1)),1);
+				posc = dim-2 - (idx - 1);
+%				posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1);
+			end
 			dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
 			% disp(sprintf('=====>   Decompose D1 (using Grey) at Level %d',dim));				
 			if (prnt == 1)
 				disp(sprintf('rz q%d,%f',qbsp(2),-ar(i)));
-				disp(sprintf('cnot q%d,q%d',qbsp(1),qbsp(2)));
+				disp(sprintf('cnot q%d,q%d',posc,dim-1));
 			end
 		end
-		[D O; O D'];
 		decomposedD = dd;
-
+	
 		if (size(V,1) == 2)
 			if (isequal(V,I))
 				decomposedV = I;
@@ -223,7 +267,7 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 				end
 			end
 		else
-			decomposedV = QSD_Main(V,prnt);
+			decomposedV = QSD_qasm(V,prnt,qbsp(1:end-1));
 		end
 		decomposedV;
 		
@@ -232,9 +276,12 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 	decomposedAB1;
 
 	%% Final Decomposition Testing
-	disp(sprintf(''))
+	if (prnt == 1) disp(sprintf('')); end
 
 	Ud = AB1*CS*AB2;
+%	if dim == 3
+%		maxerr2 = max(max(U-Ud))
+%	end
 	Ud = decomposedAB1 * decomposedCS * decomposedAB2;
 	
 end
