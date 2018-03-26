@@ -33,44 +33,47 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			'oop'
 		end
 		[delta,alpha,theta,beta] = zyz(U1);
-		decomposedU1 = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
+		decomposedU1 = Rz(alpha)*Ry(theta)*Rz(beta);
 		% disp(sprintf('=====>   Decompose U1 (using ZYZ) at Level %d',dim));
-		if (prnt == 1)
+		if (prnt > 1)
 			disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 			disp(sprintf('ry q%d,%f',qbsp(1),-theta));
 			disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
-			% disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+		end
+		if (prnt == 2)
+			decomposedU1 = AP(delta)*decomposedU1;
+			disp(sprintf('ap q%d,%f',qbsp(1),-delta));
 		end
 		decomposedAB2 = kron(I,decomposedU1);
 		if (max(max(U1+U2)) < 1e-10)
-			if (prnt == 1)
+			decomposedAB2 = kron(Rz(pi),I)*decomposedAB2;
+			if (prnt > 1)
 				disp(sprintf('rz q%d,%f',qbsp(2),-pi));
-				% disp(sprintf('ap q%d,%f',qbsp(2),-pi/2));
 			end
-			decomposedAB2 = kron(AP(-pi/2)*Rz(pi),I)*decomposedAB2;
+			if (prnt == 2)
+				decomposedAB2 = kron(AP(-pi/2),I)*decomposedAB2;
+				disp(sprintf('ap q%d,%f',qbsp(2),pi/2));
+			end
 		end
 	else
-%		[v,d,~] = eig(U1*U2');	% MATLAB
-		[v,d] = eig(complex(U1),complex(U2'));	% OCTAVE
-%		[v,d] = eig(U1,U2');	% OCTAVE
+		[v,d,~] = eig(U1*U2');	% MATLAB
+% 		[v,d] = eig(complex(U1),complex(U2'));	% OCTAVE
+% 		[v,d] = eig(U1,U2');	% OCTAVE
 		V = v;
+		if dim == 3
+			% TBD: Automate this
+			% 1 & 2 Eigenvalues in d are repeated, thus V*V' is not I. Adjustment needed
+			% https://nl.mathworks.com/matlabcentral/answers/214557-eigenvectors-are-not-orthogonal-for-some-skew-symmetric-matrices-why
+			V(:,[1,2]) = orth(V(:,[1,2]));
+		end
 		D = sqrtm(d);
 		W = D*V'*U2;
 		decomposedAB2 = [V OU; OU V]*[D OU; OU D']*[W OU; OU W];
-	
-	
-	
-	
-	if dim == 3
-		AB2
-		decomposedAB2
-		maxerr1 = max(max(AB2-decomposedAB2))
-	end		
-	
-	
-	
-	
-	
+		
+% 		if dim == 3 
+% 			disp(sprintf('+++++++++++++++++++++++++++++++++')); 
+% 		end
+		
 		if (size(W,1) == 2)
 			if (isequal(W,I))
 				decomposedW = I;
@@ -78,24 +81,15 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			else
 				% disp(sprintf('=====>   Decompose W2 (using ZYZ) at Level %d',dim));
 				[delta,alpha,theta,beta] = zyz(W);
-				decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);	
-		
-
-
-%				W
-%				det(W)
-%				W*W'
-%				decomposedW
-%				maxerrW2 = max(max(W-decomposedW))
-
-
-
-		
-				if (prnt == 1)
+				decomposedW = Rz(alpha)*Ry(theta)*Rz(beta);	
+				if (prnt > 1)
 					disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 					disp(sprintf('ry q%d,%f',qbsp(1),-theta));
 					disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
-					% disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+				end
+				if (prnt == 2)
+					decomposedW = AP(delta)*decomposedW;	
+					disp(sprintf('ap q%d,%f',qbsp(1),-delta));
 				end
 			end
 		else
@@ -103,7 +97,9 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 %			maxerrW3 = max(max(W-decomposedW))
 		end
 	
-		
+% 		if dim == 3 
+% 			disp(sprintf('+++++++++++++++++++++++++++++++++')); 
+% 		end
 
 		ab = 2*log(diag(D))/1i;
 		Minv = inv(genMk(dim-1));
@@ -119,13 +115,17 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			end
 			dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
 			% disp(sprintf('=====>   Decompose D2 (using Grey) at Level %d',dim));				
-			if (prnt == 1)
-				disp(sprintf('rz q%d,%f',qbsp(2),-ar(i)));
+			if (prnt > 1)
+				disp(sprintf('rz q%d,%f',qbsp(end),-ar(i)));
 				disp(sprintf('cnot q%d,q%d',posc,dim-1));
 			end
 		end
 		decomposedD = dd;
 
+% 		if dim == 3 
+% 			disp(sprintf('+++++++++++++++++++++++++++++++++')); 
+% 		end
+		
 		if (size(V,1) == 2)
 			if (isequal(V,I))
 				decomposedV = I;
@@ -133,12 +133,15 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			else
 				% disp(sprintf('=====>   Decompose V2 (using ZYZ) at Level %d',dim));
 				[delta,alpha,theta,beta] = zyz(V);
-				decomposedV = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-				if (prnt == 1)
+				decomposedV = Rz(alpha)*Ry(theta)*Rz(beta);
+				if (prnt > 1)
 					disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 					disp(sprintf('ry q%d,%f',qbsp(1),-theta));
 					disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
-					% disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+				end
+				if (prnt == 2)
+					decomposedV = AP(delta)*decomposedV;
+					disp(sprintf('ap q%d,%f',qbsp(1),-delta));
 				end
 			end
 		else
@@ -148,13 +151,16 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 		decomposedAB2 = kron(I,decomposedV)*decomposedD*kron(I,decomposedW);
 	end
 	decomposedAB2; 
-
-%	if dim == 3
-%		maxerr1 = max(max(AB2-decomposedAB2))
-%	end
+	
+% 	if dim == 3
+% 		kron(I,decomposedW)
+% 	end
 
     %% Decompose CS to Ry, CX
-    if (prnt == 1) disp(sprintf('')); end
+    if (prnt > 1) disp(sprintf('')); end
+% 	if dim == 3 
+% 		disp(sprintf('============================================')); 
+% 	end
 	
 	CS = [cc ss; -ss cc];
     % Property Test: cc^2 + ss^2 = eye(size(cc,1))
@@ -171,41 +177,66 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			posc = dim-2 - (idx - 1);
 %			posc = dim-2 - (strfind(num2str(sprintf(dec2bin(bin2gray(i-1),dim-1)) ~= sprintf(dec2bin(bin2gray(i),dim-1))),num2str(1)) - 1);
 		end		
-		dcs = U_CX(posc,dim-1,dim) * kron([cos(tr(i)/2) sin(tr(i)/2); -sin(tr(i)/2) cos(tr(i)/2)],eye(2^(dim-1))) * dcs;
+		dcs = kron(Ry(tr(i)),eye(2^(dim-1))) * dcs;
+		dcs = U_CX(posc,dim-1,dim) * dcs;
 		% disp(sprintf('=====>   Decompose CS (using Grey) at Level %d',dim));				
-		if (prnt == 1)
-			disp(sprintf('ry q%d,%f',qbsp(2),-tr(i)));
+		if (prnt > 1)
+			disp(sprintf('ry q%d,%f',qbsp(end),-tr(i)));
 			disp(sprintf('cnot q%d,q%d',posc,dim-1));
 		end
 	end
 	decomposedCS = dcs;
 	
     %% Decompose AB1 to V, D, W (lower dimension)
-    if (prnt == 1) disp(sprintf('')); end
-
+    if (prnt > 1) disp(sprintf('')); end
+% 	if dim == 3 
+% 		disp(sprintf('============================================')); 
+% 	end
+	
 	AB1 = [L0 zeros(size(L0,1),size(L1,2)); zeros(size(L1,1),size(L0,2)) L1];
 
 	U1 = AB1(1:splitpt,1:splitpt);
 	U2 = AB1(splitpt+1:end,splitpt+1:end);
-	
+
 	if (max(max(abs(U1+U2))) < 1e-10 || max(max(abs(U1-U2))) < 1e-10)
+		% TBD: How this section behaves for dim > 2
 		if (dim > 2)
 			'oop'
 		end
 		[delta,alpha,theta,beta] = zyz(U1);
-		decomposedU1 = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-		if(max(max(U1+U2)) < 1e-10)
-			if (prnt == 1) disp(sprintf('\tDecompose U1 (using ZYZ) at Level %d:\t Ph-I(%f,_) * Rz-I(%f,_) * I-Ph(%f,_) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,-pi/2,pi,delta,alpha,theta,beta)); end
-			decomposedAB1 = kron(AP(-pi/2)*Rz(pi),I)*kron(I,decomposedU1);
-		else
-			if (prnt == 1) disp(sprintf('\tDecompose U1 (using ZYZ) at Level %d:\t I-Ph(%f,_) * I-Rz(%f,_) * I-Ry(%f,_) * I-Rz(%f,_)',dim,delta,alpha,theta,beta)); end
-			decomposedAB1 = kron(I,I)*kron(I,decomposedU1);
+		decomposedU1 = Rz(alpha)*Ry(theta)*Rz(beta);
+		% disp(sprintf('=====>   Decompose U1 (using ZYZ) at Level %d',dim));
+		if (prnt > 1)
+			disp(sprintf('rz q%d,%f',qbsp(1),-beta));
+			disp(sprintf('ry q%d,%f',qbsp(1),-theta));
+			disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
+		end
+		if (prnt == 2)
+			decomposedU1 = AP(delta)*decomposedU1;
+			disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+		end
+		decomposedAB1 = kron(I,decomposedU1);
+		if (max(max(U1+U2)) < 1e-10)
+			decomposedAB1 = kron(Rz(pi),I)*decomposedAB1;
+			if (prnt > 1)
+				disp(sprintf('rz q%d,%f',qbsp(2),-pi));
+			end
+			if (prnt == 2)
+				decomposedAB1 = kron(AP(-pi/2),I)*decomposedAB1;
+				disp(sprintf('ap q%d,%f',qbsp(2),pi/2));
+			end
 		end
 	else
-
-%		[v,d,~] = eig(U1*U2');	% MATLAB
-		[v,d] = eig(U1,U2');	% OCTAVE
+		[v,d,~] = eig(U1*U2');	% MATLAB
+% 		[v,d] = eig(U1,U2');	% OCTAVE
 		V = v;
+		if dim == 3
+			d;
+			% TBD: Automate this
+			% 1 & 2 Eigenvalues in d are repeated, thus V*V' is not I. Adjustment needed
+			% https://nl.mathworks.com/matlabcentral/answers/214557-eigenvectors-are-not-orthogonal-for-some-skew-symmetric-matrices-why
+% 			V(:,[1,2]) = orth(V(:,[1,2]));
+		end
 		D = sqrtm(d);
 		W = D*V'*U2;
 		decomposedAB1 = [V OU; OU V]*[D OU; OU D']*[W OU; OU W];
@@ -217,12 +248,15 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			else
 				% disp(sprintf('=====>   Decompose W1 (using ZYZ) at Level %d',dim));
 				[delta,alpha,theta,beta] = zyz(W);
-				decomposedW = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);				
-				if (prnt == 1)
+				decomposedW = Rz(alpha)*Ry(theta)*Rz(beta);				
+				if (prnt > 1)
 					disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 					disp(sprintf('ry q%d,%f',qbsp(1),-theta));
 					disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
-					% disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+				end
+				if (prnt == 2)
+					decomposedW = AP(delta)*decomposedW;				
+					disp(sprintf('ap q%d,%f',qbsp(1),-delta));
 				end
 			end
 		else
@@ -244,8 +278,8 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			end
 			dd = U_CX(posc,dim-1,dim) * kron(Rz(ar(i)),eye(2^(dim-1))) * dd;
 			% disp(sprintf('=====>   Decompose D1 (using Grey) at Level %d',dim));				
-			if (prnt == 1)
-				disp(sprintf('rz q%d,%f',qbsp(2),-ar(i)));
+			if (prnt > 1)
+				disp(sprintf('rz q%d,%f',qbsp(end),-ar(i)));
 				disp(sprintf('cnot q%d,q%d',posc,dim-1));
 			end
 		end
@@ -258,12 +292,15 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 			else
 				% disp(sprintf('=====>   Decompose V1 (using ZYZ) at Level %d',dim));
 				[delta,alpha,theta,beta] = zyz(V);
-				decomposedV = AP(delta)*Rz(alpha)*Ry(theta)*Rz(beta);
-				if (prnt == 1)
+				decomposedV = Rz(alpha)*Ry(theta)*Rz(beta);
+				if (prnt > 1)
 					disp(sprintf('rz q%d,%f',qbsp(1),-beta));
 					disp(sprintf('ry q%d,%f',qbsp(1),-theta));
 					disp(sprintf('rz q%d,%f',qbsp(1),-alpha));
-					% disp(sprintf('ap q%d,%f',qbsp(1),-delta));
+				end
+				if (prnt == 2)
+					decomposedV = AP(delta)*decomposedV;
+					disp(sprintf('ap q%d,%f',qbsp(1),-delta));
 				end
 			end
 		else
@@ -276,12 +313,14 @@ function Ud = QSD_qasm(U,prnt,qbsp)
 	decomposedAB1;
 
 	%% Final Decomposition Testing
-	if (prnt == 1) disp(sprintf('')); end
+	if (prnt > 1) disp(sprintf('')); end
 
 	Ud = AB1*CS*AB2;
-%	if dim == 3
-%		maxerr2 = max(max(U-Ud))
-%	end
 	Ud = decomposedAB1 * decomposedCS * decomposedAB2;
+% 	if dim == 3
+% 		AB2
+% 		decomposedAB2
+% 		maxerr2 = max(max(abs(Ud)-abs(U)))
+% 	end
 	
 end
