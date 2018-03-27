@@ -66,10 +66,43 @@ clc
  	Ph = diag([1 1 1 1 1 1 1 exp(1i*pi)]);		% To make det(BO) +1 from -1
  	BO = eye(N)-2*bp'*bp
 
-	BOD = QSD_qasm(BO,1,[0:d-1])	% Arg2 : 1 - no qasm, no AP; 2 - qasm, AP; 3+ - qasm, no AP
+	BOD = QSD_opql(BO,1,[0:d-1])	% Arg2 : 1 - no qasm, no AP; 2 - qasm, AP; 3+ - qasm, no AP
+% 	BOD = QSD_qasm(BO,1,[0:d-1])	% Arg2 : 1 - no qasm, no AP; 2 - qasm, AP; 3+ - qasm, no AP
 % 	maxerr = max(max(BOD-BO))
 	maxerrabs = max(max(abs(BOD)-abs(BO)))
 
+U1 =[
+  -0.0000 + 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i  -0.0000 - 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 + 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 - 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 + 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 - 1.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 + 1.0000i   0.0000 + 0.0000i
+   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i   0.0000 + 0.0000i  -0.0000 - 1.0000i];
+
+U2 =[
+    0.6414    0.7672         0         0         0         0         0         0
+   -0.7672    0.6414         0         0         0         0         0         0
+         0         0    0.6414    0.7672         0         0         0         0
+         0         0   -0.7672    0.6414         0         0         0         0
+         0         0         0         0    0.6414    0.7672         0         0
+         0         0         0         0   -0.7672    0.6414         0         0
+         0         0         0         0         0         0    0.6414    0.7672
+         0         0         0         0         0         0   -0.7672    0.6414];
+
+U3 =[
+  -0.1814 + 0.4379i  -0.0737 + 0.1779i   0.0370 - 0.0893i  -0.2121 + 0.5120i   0.0370 - 0.0893i  -0.2121 + 0.5120i   0.0214 - 0.0515i  -0.1224 + 0.2956i
+   0.3306 - 0.7981i   0.0334 - 0.0806i   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.0123 - 0.0298i  -0.0707 + 0.1707i
+   0.0370 - 0.0893i  -0.2121 + 0.5120i  -0.2241 + 0.5410i   0.1712 - 0.4133i   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.0123 - 0.0298i  -0.0707 + 0.1707i
+   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.3059 - 0.7386i   0.1747 - 0.4219i   0.0123 - 0.0298i  -0.0707 + 0.1707i   0.0071 - 0.0172i  -0.0408 + 0.0985i
+   0.0370 - 0.0893i  -0.2121 + 0.5120i   0.0214 - 0.0515i  -0.1224 + 0.2956i  -0.2241 + 0.5410i   0.1712 - 0.4133i   0.0123 - 0.0298i  -0.0707 + 0.1707i
+   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.0123 - 0.0298i  -0.0707 + 0.1707i   0.3059 - 0.7386i   0.1747 - 0.4219i   0.0071 - 0.0172i  -0.0408 + 0.0985i
+   0.0214 - 0.0515i  -0.1224 + 0.2956i   0.0123 - 0.0298i  -0.0707 + 0.1707i   0.0123 - 0.0298i  -0.0707 + 0.1707i  -0.2383 + 0.5754i   0.2528 - 0.6103i
+   0.0123 - 0.0298i  -0.0707 + 0.1707i   0.0071 - 0.0172i  -0.0408 + 0.0985i   0.0071 - 0.0172i  -0.0408 + 0.0985i   0.2977 - 0.7188i   0.2219 - 0.5356i];
+
+U3*U2*U1
+	
 	% Initialization
 	n = N-2;		% Number of stored elements in associative memory
 	r = 1;			% Number of known exact solutions possible
@@ -86,49 +119,54 @@ clc
 	plot([0:N-1],bp,'-.g')
 	
 	s
-	
+	stry = s;
 	s = (BOD*s')';					% Distributed Query
 	s
-	s = -s + 2*mean(s);				% Diffuse
-	s
-	s1(1:r) = -s1(1:r);				% q = 0: Mark
-	s1 = -s1 + 2*mean(s1);			% q = 0: Diffuse
-	Psoln = [Psoln sln*s(idx)^2];
 	
-	s(N-n+1:end) = -s(N-n+1:end);	% Memorised Oracle
-	s
-	s = -s + 2*mean(s);				% Diffuse
-	s
-	s1(N-n+1:end) = -s1(N-n+1:end);	% q = 0: Mark
-	s1 = -s1 + 2*mean(s1);			% q = 0: Diffuse
-	Psoln = [Psoln sln*s(idx)^2];
+	stry = (U1*stry')'
+	stry = (U2*stry')'
+	stry = (U3*stry')'
 	
-% 	T = 420;
-	T = 6;
-	
-	for i = 1:T
-		s = (BOD*s')';				% Distributed Query
-		s
-		s = -s + 2*mean(s);			% Diffuse
-		s
-		s1(1:r) = -s1(1:r);			% q = 0: Mark
-		s1 = -s1 + 2*mean(s1);		% q = 0: Diffuse
-		Psoln = [Psoln sln*s(idx)^2];
-	end
-% 	plot([0:N-1],s1.^2,'or')
-	plot([0:N-1],abs(s).^2,'xb')	
-% 	sln*abs(s(idx))^2
-	axis([0 N-1 0 1])
+% 	s = -s + 2*mean(s);				% Diffuse
+% 	s
+% 	s1(1:r) = -s1(1:r);				% q = 0: Mark
+% 	s1 = -s1 + 2*mean(s1);			% q = 0: Diffuse
+% 	Psoln = [Psoln sln*s(idx)^2];
 % 	
-	legend('QuAM','DQ Oracle','DQ Psoln')
-% 	legend('QuAM','SQ Oracle','DQ Oracle','SQ Psoln','DQ Psoln')
-	xlabel('State')
-	ylabel('Probability')
+% 	s(N-n+1:end) = -s(N-n+1:end);	% Memorised Oracle
+% 	s
+% 	s = -s + 2*mean(s);				% Diffuse
+% 	s
+% 	s1(N-n+1:end) = -s1(N-n+1:end);	% q = 0: Mark
+% 	s1 = -s1 + 2*mean(s1);			% q = 0: Diffuse
+% 	Psoln = [Psoln sln*s(idx)^2];
 % 	
-% 	figure(2)
-% 	plot([-1:T],Psoln)
-% 	[v,i]=max(Psoln)
-% 	axis([-1 T 0 1])
+% % 	T = 420;
+% 	T = 6;
+% 	
+% 	for i = 1:T
+% 		s = (BOD*s')';				% Distributed Query
+% 		s
+% 		s = -s + 2*mean(s);			% Diffuse
+% 		s
+% 		s1(1:r) = -s1(1:r);			% q = 0: Mark
+% 		s1 = -s1 + 2*mean(s1);		% q = 0: Diffuse
+% 		Psoln = [Psoln sln*s(idx)^2];
+% 	end
+% % 	plot([0:N-1],s1.^2,'or')
+% 	plot([0:N-1],abs(s).^2,'xb')	
+% % 	sln*abs(s(idx))^2
+% 	axis([0 N-1 0 1])
+% % 	
+% 	legend('QuAM','DQ Oracle','DQ Psoln')
+% % 	legend('QuAM','SQ Oracle','DQ Oracle','SQ Psoln','DQ Psoln')
+% 	xlabel('State')
+% 	ylabel('Probability')
+% % 	
+% % 	figure(2)
+% % 	plot([-1:T],Psoln)
+% % 	[v,i]=max(Psoln)
+% % 	axis([-1 T 0 1])
 
 %% QuAMdq iteration (tested, MATLAB+QX)
 %
